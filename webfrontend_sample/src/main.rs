@@ -9,6 +9,8 @@ use std::{env,io,fs};
 use std::time::SystemTime;
 use std::path::PathBuf;
 
+mod greet;
+
 struct AppContext {
     document_root: String,
     restfulapi_server_address: String
@@ -73,6 +75,7 @@ async fn main() -> io::Result<()> {
 	    .app_data(appcontext_ref.clone())
 	    .service(web::resource("/").route(web::get().to(index)))
 	    .service(web::resource("/index.html").route(web::get().to(index)))
+	    .service(web::resource("/greet/{name}").route(web::get().to(greet::greet)))
 	    .default_service(web::route().to(|| HttpResponse::NotFound())) })
 	.bind(bind_address)?
 	.run()

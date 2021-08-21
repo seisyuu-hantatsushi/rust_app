@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    Hello <%= name %>!
+    <% for msg in &messages {%>
+    <div><%= msg %></div>
+    <% } %>
+  </body>
+</html>
