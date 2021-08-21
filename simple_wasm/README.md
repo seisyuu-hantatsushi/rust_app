@@ -21,3 +21,7 @@ Release版の場合,`cargo build --target wasm32-unknown-unknown --release`
 
 ## ES Modulesにする
 * [ES Modulesとは](https://codegrid.net/articles/2017-es-modules-1/)
+* `wasm-bindgen target/wasm32-unknown-unknown/release/<project_name>.wasm --out-dir ./pkg --target web`で`pkg`以下にES Modulesとなった,Web Assemblyができる.
+
+## Serverからserveする.
+`html`ディレクトリにhtml fileの例があるのでこれをbrowser側がGETできるように配置.
