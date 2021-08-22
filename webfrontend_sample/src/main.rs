@@ -3,7 +3,7 @@ extern crate clap;
 
 use serde::{Deserialize, Serialize};
 use actix_web::{get, post, web, client, HttpRequest, HttpResponse, HttpServer, Responder};
-use actix_files::NamedFile;
+use actix_files::{NamedFile, Files};
 
 use std::{env,io,fs};
 use std::time::SystemTime;
@@ -18,6 +18,12 @@ struct AppContext {
 
 async fn index(data: web::Data<AppContext>, _req: HttpRequest) -> actix_web::Result<NamedFile> {
     let path = format!("{}{}", data.document_root, "/index.html");
+    let path_buf:PathBuf = path.parse().unwrap();
+    Ok(NamedFile::open(path_buf)?)
+}
+
+async fn webasm_greet(data: web::Data<AppContext>, _req: HttpRequest) -> actix_web::Result<NamedFile> {
+    let path = format!("{}{}", data.document_root, "/webasm_greet.html");
     let path_buf:PathBuf = path.parse().unwrap();
     Ok(NamedFile::open(path_buf)?)
 }
@@ -75,6 +81,8 @@ async fn main() -> io::Result<()> {
 	    .app_data(appcontext_ref.clone())
 	    .service(web::resource("/").route(web::get().to(index)))
 	    .service(web::resource("/index.html").route(web::get().to(index)))
+	    .service(web::resource("/webasm_greet.html").route(web::get().to(webasm_greet)))
+	    .service(actix_files::Files::new("/simple_wasm",format!("{}/simple_wasm", document_root)))
 	    .service(web::resource("/greet/{name}").route(web::get().to(greet::greet)))
 	    .default_service(web::route().to(|| HttpResponse::NotFound())) })
 	.bind(bind_address)?
