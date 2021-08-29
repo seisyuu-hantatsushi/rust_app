@@ -1,0 +1,18 @@
+<!- ->
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+    <title>Web Assembly Canvas title</title>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script type="module">
+      import init, { start } from './wasm_canvas/wasm_canvas.js';
+      async function run() {
+	  await init();
+	  start();
+      }
+      run();
+    </script>
+  </body>
+</html>
