@@ -28,6 +28,12 @@ async fn webasm_greet(data: web::Data<AppContext>, _req: HttpRequest) -> actix_w
     Ok(NamedFile::open(path_buf)?)
 }
 
+async fn webasm_canvas(data: web::Data<AppContext>, _req: HttpRequest) -> actix_web::Result<NamedFile> {
+    let path = format!("{}{}", data.document_root, "/webasm_canvas.html");
+    let path_buf:PathBuf = path.parse().unwrap();
+    Ok(NamedFile::open(path_buf)?)
+}
+
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     const NAME: &'static str = env!("CARGO_PKG_NAME");
@@ -82,7 +88,9 @@ async fn main() -> io::Result<()> {
 	    .service(web::resource("/").route(web::get().to(index)))
 	    .service(web::resource("/index.html").route(web::get().to(index)))
 	    .service(web::resource("/webasm_greet.html").route(web::get().to(webasm_greet)))
-	    .service(actix_files::Files::new("/simple_wasm",format!("{}/simple_wasm", document_root)))
+	    .service(actix_files::Files::new("/simple_wasm", format!("{}/simple_wasm", document_root)))
+	    .service(web::resource("/webasm_canvas.html").route(web::get().to(webasm_canvas)))
+	    .service(actix_files::Files::new("/wasm_canvas", format!("{}/wasm_canvas", document_root)))
 	    .service(web::resource("/greet/{name}").route(web::get().to(greet::greet)))
 	    .default_service(web::route().to(|| HttpResponse::NotFound())) })
 	.bind(bind_address)?
