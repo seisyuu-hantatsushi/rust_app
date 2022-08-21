@@ -1,0 +1,13 @@
+[package]
+name = "mnist_read"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "3.2.17", features = ["derive"] }
+binary-layout = { version = "3.1.1" }
+eframe = { version = "0.19.0" }
+egui = { version = "0.19.0" }
+egui_extras = { version = "0.19.0" }
