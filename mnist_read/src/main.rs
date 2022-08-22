@@ -29,7 +29,8 @@ struct AppContext {
     row_of_image: u32,
     col_of_image: u32,
     label_of_image: u8,
-    image_data: Vec<Box<[u8]>>
+    image_data: Option<Box<[u8]>>,
+    is_need_revered: bool
 }
 
 struct GuiContext {
@@ -63,27 +64,29 @@ impl eframe::App for GuiContext {
 		ui.label(")");
 	    });
 
-	    let to_color_image = |image:&Vec<Box<[u8]>>| -> egui::ColorImage {
+	    let to_color_image = |image:&Box<[u8]>| -> egui::ColorImage {
 		let data_vec = vec![0; (self.appCtx.row_of_image*self.appCtx.col_of_image*4) as usize];
 		let mut data_boxed:Box<[u8]> = data_vec.into_boxed_slice();
-		let mut pos = 0;
-		for r in image.iter() {
-		    for c in r.iter() {
-			data_boxed[pos*4+0] = *c;
-			data_boxed[pos*4+1] = *c;
-			data_boxed[pos*4+2] = *c;
-			data_boxed[pos*4+3] = 255;
-			pos += 1;
+		for c in 0..self.appCtx.col_of_image {
+		    for r in 0..self.appCtx.row_of_image {
+			let dst_pos = (c*self.appCtx.row_of_image*4+r*4) as usize;
+			let src_pos = (c*self.appCtx.row_of_image+r) as usize;
+			data_boxed[dst_pos+0] = image[src_pos];
+			data_boxed[dst_pos+1] = image[src_pos];
+			data_boxed[dst_pos+2] = image[src_pos];
+			data_boxed[dst_pos+3] = 255;
 		    }
 		}
 		egui::ColorImage::from_rgba_unmultiplied([self.appCtx.row_of_image as usize ,self.appCtx.col_of_image as usize],&data_boxed)
 	    };
 
-	    let minst_image = RetainedImage::from_color_image("minst_image", to_color_image(&self.appCtx.image_data));
-	    minst_image.show(ui);
-	    //ui.add(egui::Image::new(minst_image.texture_id(ctx),
-				    //minst_image.size_vec2()).rotate(90.0_f32.to_radians(), egui::Vec2::splat(0.5)));
-        });
+	    if let Some(ref image) = self.appCtx.image_data {
+		let minst_image = RetainedImage::from_color_image("minst_image", to_color_image(&image));
+		minst_image.show(ui);
+		//ui.add(egui::Image::new(minst_image.texture_id(ctx),
+		//minst_image.size_vec2()).rotate(90.0_f32.to_radians(), egui::Vec2::splat(0.5)));
+	    }
+	});
     }
 }
 
@@ -108,11 +111,15 @@ fn main() {
 	     .short('n')
 	     .long("no_of_image")
 	     .default_value("-1")
-	     .takes_value(true));
-
+	     .takes_value(true))
+	.arg(Arg::with_name("emnist")
+	     .help("specified emnist format")
+	     .long("emnist")
+	     .takes_value(false));
 
     let mut ctx:AppContext = match appArgs.try_get_matches() {
 	Ok(m) => {
+	    println!("{:?}",m);
 	    let no_of_image = m.value_of("no_of_image").unwrap().parse::<i32>().unwrap();
 	    let ctx = AppContext {
 		labels_file: String::from(m.value_of("labels_file").unwrap()),
@@ -121,8 +128,10 @@ fn main() {
 		row_of_image: 0,
 		col_of_image: 0,
 		label_of_image: 0,
-		image_data: Vec::new()
+		image_data: None,
+		is_need_revered: m.contains_id("emnist")
 	    };
+	    println!("{:?}",ctx.is_need_revered);
 	    ctx
 	},
 	Err(e) => {
@@ -175,23 +184,62 @@ fn main() {
     }
 
     {
-	let mut counter = 0;
 	let start_pos = (ctx.row_of_image*ctx.col_of_image*ctx.no_of_image) as i64;
+	let data = vec![0; (ctx.row_of_image*ctx.col_of_image) as usize];
+	let mut data_boxed:Box<[u8]> = data.into_boxed_slice();
 	images_file.seek(SeekFrom::Current(start_pos as i64));
-	while counter < ctx.col_of_image {
-	    let mut data = vec![0; ctx.row_of_image as usize];
-	    let mut data_boxed:Box<[u8]> = data.into_boxed_slice();
-	    images_file.read(&mut data_boxed);
-	    ctx.image_data.push(data_boxed);
-	    counter += 1;
-	}
+	images_file.read(&mut data_boxed);
+	ctx.image_data = Some(data_boxed);
     }
 
-    for r in ctx.image_data.iter() {
-	for c in r.iter() {
-	    print!("{:02x} ", c);
-	}
-	println!("");
+    ctx.image_data = match ctx.image_data {
+	Some(mut image) => {
+	    if ctx. is_need_revered {
+		let data = vec![0; (ctx.row_of_image*ctx.col_of_image) as usize];
+		let mut reversed_image:Box<[u8]> = data.into_boxed_slice();
+		/*
+		for c in 0..ctx.col_of_image as usize {
+		for r in 0..ctx.row_of_image as usize {
+		let pos = (c*(ctx.row_of_image as usize)+r) as usize;
+		print!("{:02x}", image[pos]);
+	    }
+		println!("");
+	    }
+		println!("");
+		 */
+
+		// 右90度回転
+		for c in 0..ctx.col_of_image as usize {
+		    for r in 0..ctx.row_of_image as usize {
+			let src_pos = ((ctx.col_of_image-1) as usize - r)*(ctx.row_of_image as usize)+c;
+			reversed_image[c*(ctx.row_of_image as usize)+r] = image[src_pos];
+		    }
+		}
+		/*
+		for c in 0..ctx.col_of_image as usize {
+		for r in 0..ctx.row_of_image as usize {
+		let pos = (c*(ctx.row_of_image as usize)+r) as usize;
+		print!("{:02x}", reversed_image[pos]);
+	    }
+		println!("");
+	    }
+		println!("");
+		 */
+		// 鏡像反転
+		for c in 0..ctx.col_of_image as usize {
+		    for r in 0..ctx.row_of_image as usize {
+			let src_pos = c*(ctx.row_of_image as usize) + ((ctx.row_of_image-1) as usize - r);
+			image[c*(ctx.row_of_image as usize)+r] = reversed_image[src_pos];
+		    }
+		}
+	    }
+	    Some(image)
+	},
+	None => None
+    };
+
+    if ctx.image_data.is_none() {
+	return
     }
 
     let options = eframe::NativeOptions::default();
@@ -200,5 +248,4 @@ fn main() {
         options,
         Box::new(|_cc| Box::new(GuiContext { appCtx: ctx })),
     );
-
 }
