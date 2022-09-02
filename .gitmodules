@@ -1,0 +1,3 @@
+[submodule "submodules/rust_libraries"]
+	path = submodules/rust_libraries
+	url = git@github.com:seisyuu-hantatsushi/rust_libraries.git
