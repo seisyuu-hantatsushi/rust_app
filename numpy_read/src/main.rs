@@ -222,14 +222,29 @@ fn parse_npy_format(format_str: String) -> Result<NpyFormat,(u32, String)> {
     };
 
     let shape = if let Some(shape_str) = dict.get("shape") {
-	let shape_token:Vec<&str> = shape_str.trim_start_matches('(').trim_end_matches(')').split(',').collect::<Vec<&str>>();
-	match (shape_token[0].parse(), shape_token[1].parse()) {
-	    (Ok(c), Ok(r)) => {
-		(c, r)
+	let shape_token:Vec<&str> = shape_str.
+	    trim_start_matches('(').trim_end_matches(')').trim_end_matches(',').split(',').collect::<Vec<&str>>();
+
+	if shape_token.len() == 1 {
+	    match shape_token[0].parse() {
+		Ok(r) => (1, r),
+		Err(_) => {
+		    return Err((5,"invalid shape value".to_string()));
+		}
 	    }
-	    _ => {
-		return Err((5,"invalid shape value".to_string()));
+	}
+	else if shape_token.len() == 2 {
+	    match (shape_token[0].parse(), shape_token[1].parse()) {
+		(Ok(c), Ok(r)) => {
+		    (c, r)
+		}
+		_ => {
+		    return Err((5,"invalid shape value".to_string()));
+		}
 	    }
+	}
+	else {
+	    return Err((5,"invalid shape value".to_string()));
 	}
     }
     else {
@@ -490,26 +505,40 @@ fn main() {
     for weight_file in ctx.weight_files {
 	match parse_npy(&weight_file) {
 	    Ok(weight_array) => {
+		/*
 		println!("{} {}", weight_array.shape.0, weight_array.shape.1);
 		println!("{:?}", &weight_array.values[weight_array.shape.1*0+0..weight_array.shape.1*1]);
 		println!("{}", weight_array.values[weight_array.shape.1*0+1]);
 		println!("{}", weight_array.values[weight_array.shape.1*1+0]);
 		println!("{}", weight_array.values[weight_array.shape.1*10+12]);
 		println!("{:?}", &weight_array.values[weight_array.shape.1*783..weight_array.shape.1*784]);
-/*
+*/
 		if let Some(ref output) = output {
 		    let file_path = Path::new(&weight_file);
-		    println!("{:?}",file_path.file_stem().unwrap().to_str());
-		    let wrapped_date_set = output.new_dataset::<f64>().shape([weight_array.len(), weight_array[0].len()]).create(file_path.file_stem().unwrap().to_str());
+		    let array = &weight_array.values;
+		    let wrapped_date_set = output.new_dataset::<f32>().shape([weight_array.shape.0, weight_array.shape.1]).create(file_path.file_stem().unwrap().to_str());
 		    if let Ok(data_set) = wrapped_date_set {
-			data_set.write_slice(&weight_array.values);
+			if let Err(err) = data_set.write_raw(array) {
+			    match err {
+				hdf5::Error::HDF5(es) => {
+				    if let Ok(expanded_es) = es.expand() {
+					eprintln!("{}",expanded_es.description().to_string());
+				    }
+				    else {
+					eprintln!("Internal Error");
+				    }
+				},
+				hdf5::Error::Internal(es) => {
+				    eprintln!("{}",es.to_string());
+				}
+			    }
+			}
 		    }
 		    else {
 			eprintln!("failed to write hdf5 file");
 			return;
 		    }
 		}
-*/
 	    },
 	    Err((code, message)) => {
 		println!("{} {}", code, message);
