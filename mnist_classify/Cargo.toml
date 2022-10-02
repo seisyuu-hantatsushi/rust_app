@@ -1,0 +1,13 @@
+[package]
+name = "mnist_classify"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "3.2.17", features = ["derive"] }
+byteorder = { version = "1" }
+hdf5 = { version = "0.8.1" }
+linear_transform = { path = "../submodules/rust_libraries/linear_transform" }
+deep-learning = { path = "../submodules/rust_libraries/deep-learning" }
