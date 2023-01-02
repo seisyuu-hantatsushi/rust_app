@@ -175,7 +175,10 @@ fn main() -> Result<(),Box<dyn std::error::Error>>{
 			.build_cartesian_2d(0.0f32..1.0f32, -2.0f32..2.0f32)?;
 		data_points_chart_builder.configure_mesh().disable_x_mesh().disable_y_mesh().draw()?;
 		data_points_chart_builder.draw_series(data_points.iter().map(|(x,y)| Circle::new((**x as f32,**y as f32), 2, GREEN.filled())))?;
-		data_points_chart_builder.draw_series(pred_points.into_iter().map(|(x,y)| Circle::new((x, y), 2, RED.filled())))?;
+		data_points_chart_builder
+			.draw_series(LineSeries::new(pred_points,&RED))?
+			.label(format!("prediction"))
+			.legend(|(x, y)| PathElement::new(vec![(x, y), (x+20, y)], &RED));
 
 		data_points_chart_builder
 			.configure_series_labels()
