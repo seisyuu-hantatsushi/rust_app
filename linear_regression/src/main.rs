@@ -54,9 +54,11 @@ fn linear_regression() -> Result<(),Box<dyn std::error::Error>> {
 
 	let w = nn.create_neuron("W", Tensor::<f64>::zero(&[1,1]));
 	let b = nn.create_neuron("b", Tensor::<f64>::zero(&[1,1]));
+/*
 	let xw = nn.matrix_product(Rc::clone(&x),Rc::clone(&w));
 	let y_pred = nn.add(xw,Rc::clone(&b));
-
+	 */
+	let y_pred = nn.affine(Rc::clone(&x),Rc::clone(&w),Rc::clone(&b));
 	let loss = nn.mean_square_error(Rc::clone(&y),y_pred);
 
 	//println!("loss {}", loss.borrow());
