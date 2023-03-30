@@ -7,6 +7,7 @@ use linear_transform::Tensor;
 
 use deep_learning::neural_network::NeuralNetwork;
 use deep_learning::datasets::*;
+use deep_learning::utils::*;
 use deep_learning::neural_network::model::MLPActivator;
 use deep_learning::neural_network::optimizer::{SGD,MomentumSDG,Optimizer,NNOptimizer};
 
@@ -92,6 +93,8 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 		let loss = nn.softmax_cross_entropy_error(Rc::clone(&classfied_result[0]), Rc::clone(&teacher_label));
 		let max_iter = (num_of_data*num_of_class)/batch_size;
 		let mut avgloss_at_epoch:Vec<(f64,f64)> = vec!();
+		let mut avgaccuracy_at_epoch:Vec<(f64,f64)> = vec!();
+
 		nn.backward_propagating(0)?;
 
 		//nn.make_dot_graph(0,"order0.dot")?;
@@ -99,6 +102,7 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 		{
 			for epoch in 0..max_epoch {
 				let mut sum_loss:f64 = 0.0;
+				let mut sum_accuracy:f64 = 0.0;
 				let perm_table = {
 					let mut v = (0..(num_of_data*num_of_class)).collect::<Vec<usize>>();
 					v.shuffle(&mut nn.get_rng());
@@ -111,37 +115,63 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 					let batch_t = ts.selector(batch_index);
 
 					input_x.borrow_mut().assign(batch_x);
-					teacher_label.borrow_mut().assign(batch_t);
+					teacher_label.borrow_mut().assign(batch_t.clone());
 
 					//println!("{}",x.borrow().ref_signal());
 					//println!("{}",t.borrow().ref_signal());
 					nn.forward_propagating(0)?;
 					nn.forward_propagating(1)?;
+					let classfied_argmax = {
+						let t = classfied_result[0].borrow().ref_signal().argmax(1);
+						t.reshape(&[1,batch_size])
+					};
+					let accuracy:f64 = accuracy(&classfied_argmax,
+												&batch_t);
+					println!("accuracy {}", accuracy);
 					optimizer.update()?;
 
 					println!("loss {} {}", loss.borrow().ref_signal()[vec![0,0]], batch_size);
 					sum_loss += loss.borrow().ref_signal()[vec![0,0]] * (batch_size as f64);
-
+					sum_accuracy += accuracy * (batch_size as f64);
 				}
 				//println!("sum_loss {} {}",sum_loss,num_of_alldata);
 				let avg_of_loss = sum_loss / (num_of_alldata as f64);
-				println!("epoch {}, avg loss {}", epoch, avg_of_loss);
+				let avg_of_accuracy = sum_accuracy / (num_of_alldata as f64);
+				println!("epoch {}, avg loss {}, avg accuracy {}", epoch, avg_of_loss, avg_of_accuracy);
 				avgloss_at_epoch.push((epoch as f64, avg_of_loss));
+				avgaccuracy_at_epoch.push((epoch as f64, avg_of_accuracy));
 			}
 
-			let render_backend = BitMapBackend::new("epoch_loss.png", (640, 480)).into_drawing_area();
-			render_backend.fill(&WHITE)?;
+			{
+				let render_backend = BitMapBackend::new("epoch_loss.png", (640, 480)).into_drawing_area();
+				render_backend.fill(&WHITE)?;
 
-			let mut chart_builder = ChartBuilder::on(&render_backend)
-				.caption("epoch loss", ("sans-serif", 40).into_font())
-				.margin(5)
-				.x_label_area_size(30)
-				.y_label_area_size(30)
-				.build_cartesian_2d(0.0f32..300.0f32, 0.0f32..1.4f32)?;
-			chart_builder.configure_mesh().disable_x_mesh().disable_y_mesh().draw()?;
+				let mut chart_builder = ChartBuilder::on(&render_backend)
+					.caption("epoch loss", ("sans-serif", 40).into_font())
+					.margin(5)
+					.x_label_area_size(30)
+					.y_label_area_size(30)
+					.build_cartesian_2d(0.0f32..300.0f32, 0.0f32..1.4f32)?;
+				chart_builder.configure_mesh().disable_x_mesh().disable_y_mesh().draw()?;
 
-			chart_builder.draw_series(LineSeries::new(avgloss_at_epoch.iter().map(|(x,y)| { (*x as f32, *y as f32) }),&BLUE))?;
-			render_backend.present()?;
+				chart_builder.draw_series(LineSeries::new(avgloss_at_epoch.iter().map(|(x,y)| { (*x as f32, *y as f32) }),&BLUE))?;
+				render_backend.present()?;
+			}
+			{
+				let render_backend = BitMapBackend::new("epoch_acc.png", (640, 480)).into_drawing_area();
+				render_backend.fill(&WHITE)?;
+
+				let mut chart_builder = ChartBuilder::on(&render_backend)
+					.caption("epoch accuracy", ("sans-serif", 40).into_font())
+					.margin(5)
+					.x_label_area_size(30)
+					.y_label_area_size(30)
+					.build_cartesian_2d(0.0f32..300.0f32, 0.0f32..1.4f32)?;
+				chart_builder.configure_mesh().disable_x_mesh().disable_y_mesh().draw()?;
+
+				chart_builder.draw_series(LineSeries::new(avgaccuracy_at_epoch.iter().map(|(x,y)| { (*x as f32, *y as f32) }),&BLUE))?;
+				render_backend.present()?;
+			}
 		}
 
 		let mut predict = |x:f64, y:f64| -> usize {
