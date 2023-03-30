@@ -48,14 +48,14 @@ fn main() -> Result<(),Box<dyn std::error::Error>>{
     let w1 = nn.create_neuron("W1", Tensor::<f64>::from_vector(vec![1,10],
 							       (0..10).map(|_| 0.01 * normal_dist.sample(&mut rng)).collect()));
     let b1 = nn.create_neuron("b1", Tensor::<f64>::zero(&[1,1]));
-    let w2 = nn.create_neuron("W2", Tensor::<f64>::from_vector(vec![10,1],
+	let w2 = nn.create_neuron("W2", Tensor::<f64>::from_vector(vec![10,1],
 							       (0..10).map(|_| 0.01 * normal_dist.sample(&mut rng)).collect()));
-    let b2 = nn.create_neuron("b2", Tensor::<f64>::zero(&[1,1]));
+	let b2 = nn.create_neuron("b2", Tensor::<f64>::zero(&[1,1]));
 
-    let term1  = nn.affine(Rc::clone(&x), Rc::clone(&w1), Rc::clone(&b1));
+	let term1  = nn.affine(Rc::clone(&x), Rc::clone(&w1), Some(Rc::clone(&b1)));
 	term1.borrow_mut().rename("affine1");
 	let term2  = nn.sigmoid(Rc::clone(&term1));
-	let pred_y = nn.affine(Rc::clone(&term2), Rc::clone(&w2), Rc::clone(&b2));
+	let pred_y = nn.affine(Rc::clone(&term2), Rc::clone(&w2), Some(Rc::clone(&b2)));
 	pred_y.borrow_mut().rename("pred_y");
 	let loss   = nn.mean_square_error(Rc::clone(&y), Rc::clone(&pred_y));
 	let learning_rate = 0.2;
@@ -84,7 +84,7 @@ fn main() -> Result<(),Box<dyn std::error::Error>>{
 			gw1.borrow().ref_signal().scale(learning_rate)
 		}
 		else {
-		return Err(Box::new(MyError::StringMsg("w1 does not have grad".to_string())));
+			return Err(Box::new(MyError::StringMsg("w1 does not have grad".to_string())));
 		};
 		//println!("w_feedback {}\n", w_feedback);
 		let updated_w = w1.borrow().ref_signal() - w_feedback;
@@ -188,6 +188,6 @@ fn main() -> Result<(),Box<dyn std::error::Error>>{
 			.draw()?;
 		render_backend.present()?;
     }
-	
+
     Ok(())
 }
