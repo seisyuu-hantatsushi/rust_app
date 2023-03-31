@@ -34,6 +34,12 @@ async fn webasm_canvas(data: web::Data<AppContext>, _req: HttpRequest) -> actix_
     Ok(NamedFile::open(path_buf)?)
 }
 
+async fn webasm_webgl_triangle(data: web::Data<AppContext>, _req: HttpRequest) -> actix_web::Result<NamedFile> {
+    let path = format!("{}{}", data.document_root, "/webasm_webgl_triangle.html");
+    let path_buf:PathBuf = path.parse().unwrap();
+    Ok(NamedFile::open(path_buf)?)
+}
+
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     const NAME: &'static str = env!("CARGO_PKG_NAME");
@@ -91,6 +97,8 @@ async fn main() -> io::Result<()> {
 	    .service(actix_files::Files::new("/simple_wasm", format!("{}/simple_wasm", document_root)))
 	    .service(web::resource("/webasm_canvas.html").route(web::get().to(webasm_canvas)))
 	    .service(actix_files::Files::new("/wasm_canvas", format!("{}/wasm_canvas", document_root)))
+	    .service(web::resource("/webasm_webgl_triangle.html").route(web::get().to(webasm_webgl_triangle)))
+	    .service(actix_files::Files::new("/wasm_webgl_triangle", format!("{}/wasm_webgl_triangle", document_root)))
 	    .service(web::resource("/greet/{name}").route(web::get().to(greet::greet)))
 	    .default_service(web::route().to(|| HttpResponse::NotFound())) })
 	.bind(bind_address)?
