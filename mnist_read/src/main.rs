@@ -92,16 +92,16 @@ impl eframe::App for GuiContext {
 
 fn main() {
 
-    let appArgs = App::new("minst_reader")
+    let appArgs = App::new("mnist_reader")
 	.version("0.1.0")
 	.arg(Arg::with_name("labels_file")
-	     .help("minst label file")
+	     .help("mnist label file")
 	     .short('l')
 	     .long("labels_file")
 	     .takes_value(true)
 	     .required(true))
 	.arg(Arg::with_name("images_file")
-	     .help("minst image file")
+	     .help("mnist image file")
 	     .short('i')
 	     .long("images_file")
 	     .takes_value(true)
