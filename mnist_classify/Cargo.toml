@@ -6,3 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+linear_transform = { path = "../submodules/rust_libraries/linear_transform" }
+deep_learning = { path = "../submodules/rust_libraries/deep_learning" }
