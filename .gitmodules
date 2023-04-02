@@ -1,3 +1,6 @@
 [submodule "submodules/rust_libraries"]
 	path = submodules/rust_libraries
 	url = git@github.com:seisyuu-hantatsushi/rust_libraries.git
+[submodule "submodules/Rust-CUDA"]
+	path = submodules/Rust-CUDA
+	url = git@github.com:Rust-GPU/Rust-CUDA.git
