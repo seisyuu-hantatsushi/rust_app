@@ -1,0 +1,10 @@
+[package]
+name = "gpu_kernel"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cuda_std = { version = "0.2", path = "../../../Rust-CUDA/crates/cuda_std" }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
